@@ -15,19 +15,17 @@
               <v-tabs-items v-model="selectedTab">
                 <v-tab-item :value="0">
                   <transition-group name="list" tag="v-list" >
-                    <v-list-item dense v-for="(item, i) in pending" :key="item.text">
+                    <v-list-item dense v-for="(item, i) in getPending" :key="item.text">
                       <v-checkbox v-model="item.value" :label="item.text" :class="item.value ? 'checked': ''" @change="setAsCompleted($event, i)"></v-checkbox>
                     </v-list-item>
                   </transition-group>
                 </v-tab-item>
                 <v-tab-item :value="1">
                   <transition-group name="list" tag="v-list" >
-
-                    <v-list-item  v-for="(item, i) in completed" :key="item.text">
+                    <v-list-item  v-for="(item, i) in getCompleted" :key="item.text">
                       <v-checkbox v-model="item.value" :label="item.text" @change="setAsPending($event, i)"></v-checkbox>
                     </v-list-item>
                   </transition-group>
-
                 </v-tab-item>
               </v-tabs-items>
 
@@ -55,42 +53,57 @@ declare interface todoItem {
 export default Vue.extend({
   data() {
     return {
-      pending: [] as todoItem[],
-      completed: [] as todoItem[],
       todoField: '',
       selectedTab: 0,
       showAlert: false
     }
   },
+  computed: {
+    getPending() {
+      return this.$store.getters.getPending;
+    },
+    getCompleted() {
+      return this.$store.getters.getCompleted;
+    }
+  },
   methods: {
     addTodo() {
-      if (this.pending.some(e => e.text === this.todoField)) {
+      const pending = this.$store.getters.getPending;
+      if (pending.some(e => e.text === this.todoField)) {
         this.showAlert = true;
         setTimeout(() => {
           this.showAlert = false;
         }, 3000);
         return true;
       }
-      this.pending.push({value: false, text: this.todoField});
+      pending.push({value: false, text: this.todoField});
       this.todoField = '';
+      this.$store.commit('setPending', pending);
     },
     setAsCompleted(event: boolean, index: any) {
+      const pending = this.getPending;
+      const completed = this.getCompleted;
       if (event) {
-        this.completed.push(this.pending[index]);
+        completed.push(pending[index]);
+        this.$store.commit('setCompleted', completed);
         setTimeout(() => {
-          this.pending.splice(index, 1);
+          pending.splice(index, 1);
+          this.$store.commit('setPending', pending);
         }, 500);
       }
-      console.log(event);
     },
     setAsPending(event: boolean, index: any) {
+      const pending = this.getPending;
+      const completed = this.getCompleted;
+
       if (!event) {
-        this.pending.push(this.completed[index]);
+        pending.push(completed[index]);
+        this.$store.commit('setPending', pending);
         setTimeout(() => {
-          this.completed.splice(index, 1);
+          completed.splice(index, 1);
+          this.$store.commit('setCompleted', completed);
         }, 500);
       }
-      console.log(event);
     }
   }
 })
